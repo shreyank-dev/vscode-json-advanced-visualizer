@@ -1,0 +1,21 @@
+<main>
+  <div *ngIf="jsonError" class="error-container">
+    <p-message severity="error" text="{{ jsonError }}"></p-message>
+  </div>
+
+  <div *ngIf="parsedJson && !jsonError">
+    <p-tabView (onChange)="onTabChange($event)">
+      <p-tabPanel header="Tree View">
+        <app-tree-view [jsonData]="parsedJson"></app-tree-view>
+      </p-tabPanel>
+
+      <p-tabPanel header="Table View" *ngIf="isTableData">
+        <app-table-view [tableData]="parsedJson"></app-table-view>
+      </p-tabPanel>
+
+      <p-tabPanel header="Chart View">
+        <app-chart-view [jsonData]="parsedJson"></app-chart-view>
+      </p-tabPanel>
+    </p-tabView>
+  </div>
+</main>

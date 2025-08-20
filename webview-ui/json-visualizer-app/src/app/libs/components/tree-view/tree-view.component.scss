@@ -1,0 +1,120 @@
+.tree-container {
+  max-height: calc(100vh - 7.625rem);
+  height: calc(100% - 30px);
+  overflow-y: auto;
+}
+
+.path-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 4px 20px;
+  background-color: var(--vscode-editor-background);
+  border-top: 1px solid var(--vscode-sideBar-border);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.9em;
+  height: 30px;
+  box-sizing: border-box;
+
+  .path-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+
+    i {
+      cursor: pointer;
+      margin-left: 10px;
+      color: var(--vscode-icon-foreground);
+      &:hover {
+        color: var(--vscode-textLink-activeForeground);
+      }
+    }
+  }
+}
+
+// --- Syntax Highlighting and Hover Styles ---
+:host ::ng-deep {
+  // --- Default Colors (Dark Themes) ---
+
+  // For nodes representing primitives, color the entire label
+  .p-treenode.json-string > .p-treenode-content .p-treenode-label {
+    color: #ce9178; // Orange for strings
+  }
+  .p-treenode.json-number > .p-treenode-content .p-treenode-label {
+    color: #b5cea8; // Green for numbers
+  }
+  .p-treenode.json-boolean > .p-treenode-content .p-treenode-label {
+    color: #569cd6; // Blue for booleans
+  }
+  .p-treenode.json-null > .p-treenode-content .p-treenode-label {
+    color: #808080; // Gray for null
+  }
+
+  // For object/array nodes, just color the key, not the children count we will add later
+  .p-treenode.json-object > .p-treenode-content .p-treenode-label {
+    color: #9cdcfe; // Light blue for keys
+  }
+
+  // --- Default Colors (Light Themes) ---
+  body.vscode-light & {
+    .p-treenode.json-string > .p-treenode-content .p-treenode-label {
+      color: #a31515; // Dark red for strings
+    }
+    .p-treenode.json-number > .p-treenode-content .p-treenode-label {
+      color: #098658; // Dark green for numbers
+    }
+    .p-treenode.json-boolean > .p-treenode-content .p-treenode-label {
+      color: #0000ff; // Standard blue for booleans
+    }
+    .p-treenode.json-null > .p-treenode-content .p-treenode-label {
+      color: #505050; // Dark gray for null
+    }
+    .p-treenode.json-object > .p-treenode-content .p-treenode-label {
+      color: #001080; // Dark blue for keys
+    }
+  }
+
+  // --- Hover and Actions Styles ---
+
+  .p-treenode-content {
+    transition: background-color 150ms ease-in-out;
+  }
+
+  .node-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .node-actions {
+    visibility: hidden;
+    opacity: 0;
+    margin-left: 12px;
+    transition: opacity 150ms ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--vscode-icon-foreground);
+
+    i {
+      cursor: pointer;
+      &:hover {
+        color: var(--vscode-textLink-activeForeground);
+      }
+    }
+  }
+
+  .p-treenode-content:hover {
+    background-color: var(--vscode-list-hoverBackground);
+
+    .node-actions {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+}

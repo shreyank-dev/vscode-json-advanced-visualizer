@@ -1,0 +1,36 @@
+<div class="tree-container">
+  <p-tree
+    [value]="treeData"
+    selectionMode="single"
+    (onNodeSelect)="onNodeSelect($event)"
+  >
+    <ng-template pTemplate="default" let-node>
+      <div class="node-content">
+        <span class="node-label">{{ node.label }}</span>
+        <div class="node-actions">
+          <i
+            class="pi pi-key"
+            pTooltip="Copy Key"
+            (click)="copyToClipboard(node.data.key, 'Key', $event)"
+          ></i>
+          <i
+            class="pi pi-copy"
+            pTooltip="Copy Value"
+            (click)="copyToClipboard(node.data.value, 'Value', $event)"
+          ></i>
+        </div>
+      </div>
+    </ng-template>
+  </p-tree>
+</div>
+
+<footer class="path-footer" *ngIf="selectedNodePath">
+  <div class="path-content">
+    <span>{{ selectedNodePath }}</span>
+    <i
+      class="pi pi-copy"
+      pTooltip="Copy Path"
+      (click)="copyToClipboard(selectedNodePath, 'Path', $event)"
+    ></i>
+  </div>
+</footer>

@@ -1,0 +1,11 @@
+{
+  // See http://go.microsoft.com/fwlink/?LinkId=827846 to learn about workspace recommendations.
+
+  // List of extensions which should be recommended for users of this workspace.
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "connor4312.esbuild-problem-matchers",
+    "ms-vscode.extension-test-runner",
+    "angular.ng-template"
+  ]
+}

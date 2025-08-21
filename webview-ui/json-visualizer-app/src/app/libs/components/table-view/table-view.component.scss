@@ -1,5 +1,27 @@
-:host ::ng-deep {
-  .p-datatable.p-datatable-sm .p-datatable-thead > tr > th {
-    min-width: 7rem;
+:host {
+  display: flex;
+}
+
+.table-view {
+  max-height: calc(100vh - 5.5625rem);
+  width: calc(100vw - 2.5rem);
+
+  ::ng-deep {
+    .p-datatable {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+    }
+    .p-datatable-wrapper {
+      flex: 1;
+    }
+    .p-datatable-table {
+      width: 100%;
+      height: 100%;
+    }
+    .p-datatable .p-datatable-thead > tr > th {
+      min-width: 7rem;
+    }
   }
 }

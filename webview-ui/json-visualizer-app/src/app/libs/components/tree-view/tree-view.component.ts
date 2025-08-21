@@ -44,6 +44,9 @@ export class TreeViewComponent implements OnChanges {
   /** The raw JSON object or array passed in from the parent component. */
   @Input() jsonData: any;
 
+  /** Flag to check whether the component is opened in a dialog or not */
+  @Input() dialogMode: boolean = false;
+
   /** The transformed data in the format required by the PrimeNG p-tree component. */
   public treeData: TreeNode[] = [];
 
@@ -69,6 +72,12 @@ export class TreeViewComponent implements OnChanges {
     if (event.node && event.node.data) {
       this.selectedNodePath = event.node.data.path;
     }
+  }
+
+  get scrollHeight() {
+    return this.dialogMode
+      ? 'calc(60vh - 8.8175rem)'
+      : 'calc(100vh - 8.8175rem)';
   }
 
   /**

@@ -4,10 +4,9 @@
   [paginator]="true"
   [rows]="10"
   [showCurrentPageReport]="true"
-  [tableStyle]="{ 'min-width': '50rem' }"
   currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
   [rowsPerPageOptions]="[10, 25, 50]"
-  styleClass="p-datatable-sm"
+  class="table-view"
 >
   <ng-template pTemplate="header">
     <tr>
@@ -39,6 +38,7 @@
 
 <p-dialog
   header="Nested Data"
+  class="tree-view-dialog"
   [(visible)]="displayDialog"
   [modal]="true"
   [style]="{ width: '50vw', height: '60vh' }"
@@ -48,5 +48,6 @@
   <app-tree-view
     *ngIf="displayDialog"
     [jsonData]="selectedCellData"
+    [dialogMode]="true"
   ></app-tree-view>
 </p-dialog>

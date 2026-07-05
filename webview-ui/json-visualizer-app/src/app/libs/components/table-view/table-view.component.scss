@@ -25,3 +25,18 @@
     }
   }
 }
+
+.tree-view-dialog {
+  ::ng-deep {
+    .p-dialog-content {
+      padding: 0;
+    }
+    .p-tree {
+      padding-block: 0;
+    }
+    .path-footer {
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+  }
+}

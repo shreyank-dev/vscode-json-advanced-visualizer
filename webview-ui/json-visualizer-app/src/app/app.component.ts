@@ -1,12 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  HostListener,
-  NgZone,
-  OnDestroy,
-  OnInit,
-  ViewChild,
-} from '@angular/core';
+import { Component, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 // PrimeNG Modules
@@ -17,7 +10,6 @@ import { MessageModule } from 'primeng/message';
 // Child Components
 import { TreeViewComponent } from './libs/components/tree-view/tree-view.component';
 import { TableViewComponent } from './libs/components/table-view/table-view.component';
-import { ChartViewComponent } from './libs/components/chart-view/chart-view.component';
 
 // Services
 import { ThemeService } from './libs/services/theme.service';
@@ -39,15 +31,11 @@ import { VscodeApiService } from './libs/services/vscode-api.service';
     MessageModule,
     TreeViewComponent,
     TableViewComponent,
-    ChartViewComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit, OnDestroy {
-  /** A reference to the ChartViewComponent to call its public methods. */
-  @ViewChild(ChartViewComponent) chartView: ChartViewComponent | undefined;
-
   private messageSubscription: Subscription | undefined;
 
   /** The parsed JSON data, passed to child components. */
@@ -62,7 +50,7 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private ngZone: NgZone,
     private themeService: ThemeService,
-    private vscodeApiService: VscodeApiService
+    private vscodeApiService: VscodeApiService,
   ) {
     // Initialize the theme service to listen for VS Code theme changes.
     this.themeService.initThemeListener();
@@ -98,26 +86,18 @@ export class AppComponent implements OnInit, OnDestroy {
             }
           });
         }
-      }
+      },
     );
   }
 
   /**
    * Called when the active tab changes in the p-tabView.
-   * This is used to trigger the ChartViewComponent to draw its chart,
-   * as the chart can only be rendered when its container is visible in the DOM.
    * @param event The event emitted by the TabView, which includes the index of the selected tab.
    */
   onTabChange(event: TabViewChangeEvent) {
     // Current Order:
     // Index 0: Tree View
     // Index 1: Table View (if isTableData is true)
-    // Index 2 or 1: Chart View
-    const chartTabIndex = this.isTableData ? 2 : 1;
-
-    if (event.index === chartTabIndex) {
-      this.chartView?.drawChart();
-    }
   }
 
   // Clean up the subscription to prevent memory leaks

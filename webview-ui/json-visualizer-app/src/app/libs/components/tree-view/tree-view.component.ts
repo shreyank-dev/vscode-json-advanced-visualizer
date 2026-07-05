@@ -74,6 +74,9 @@ export class TreeViewComponent implements OnChanges {
     }
   }
 
+  /**
+   * Set the scroll height for tree view based on whether the tree view is opened in a dialog or not
+   */
   get scrollHeight() {
     return this.dialogMode
       ? 'calc(60vh - 8.8175rem)'

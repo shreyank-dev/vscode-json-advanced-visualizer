@@ -12,10 +12,6 @@
       <p-tabPanel header="Table View" *ngIf="isTableData">
         <app-table-view [tableData]="parsedJson"></app-table-view>
       </p-tabPanel>
-
-      <p-tabPanel header="Chart View">
-        <app-chart-view [jsonData]="parsedJson"></app-chart-view>
-      </p-tabPanel>
     </p-tabView>
   </div>
 </main>

@@ -11,7 +11,6 @@
 
 .tree-toolbar {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
   gap: 12px;
   padding: 6px 14px;
@@ -22,18 +21,66 @@
   min-height: 34px;
   box-sizing: border-box;
 
+  .search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    max-width: 300px;
+
+    .search-icon {
+      position: absolute;
+      left: 6px;
+      color: var(--vscode-input-placeholderForeground, #858585);
+      font-size: 11px;
+      pointer-events: none;
+    }
+
+    .clear-icon {
+      position: absolute;
+      right: 6px;
+      color: var(--vscode-input-placeholderForeground, #858585);
+      font-size: 9px;
+      cursor: pointer;
+      &:hover {
+        color: var(--vscode-input-foreground, #ffffff);
+      }
+    }
+
+    .search-input {
+      width: 100%;
+      height: 24px;
+      padding: 2px 20px 2px 22px;
+      background-color: var(--vscode-input-background, #3c3c3c);
+      border: 1px solid var(--vscode-input-border, #3c3c3c);
+      color: var(--vscode-input-foreground, #cccccc);
+      border-radius: 2px;
+      font-family: var(--vscode-font-family);
+      font-size: 11px;
+      outline: none;
+      box-sizing: border-box;
+
+      &:focus {
+        border-color: var(--vscode-focusBorder, #007acc);
+      }
+
+      &::placeholder {
+        color: var(--vscode-input-placeholderForeground, #858585);
+      }
+    }
+  }
   .toolbar-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     background: transparent;
     border: none;
     color: var(--vscode-foreground, #cccccc);
     cursor: pointer;
-    padding: 2px 6px;
+    padding: 4px 8px;
     border-radius: 3px;
     font-size: 11px;
-    transition: background-color 100ms ease;
+    white-space: nowrap;
 
     &:hover {
       background-color: var(
@@ -42,9 +89,21 @@
       );
       color: var(--vscode-toolbar-activeForeground, #ffffff);
     }
+  }
 
-    i {
-      font-size: 10px;
+  .search-results-badge {
+    margin-left: auto; // Pushes the status smoothly to the right edge of the toolbar
+    color: var(--vscode-descriptionForeground, #858585);
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+
+    &.no-match {
+      color: var(
+        --vscode-errorForeground,
+        #f48771
+      ); // Highlight red if filter turns up empty
+      font-weight: bold;
     }
   }
 }

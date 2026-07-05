@@ -57,6 +57,16 @@ export class TreeViewComponent implements OnChanges {
   private readonly MAX_EXPAND_THRESHOLD = 5000;
   /** Tracks the computed total density of the active JSON document. */
   public actualNodeCount = 0;
+  /** Tracks the number of visible nodes currently matching the search filter. */
+  public filteredNodeCount = 0;
+
+  /** Pristine cache of the fully transformed tree structure used for fast resetting. */
+  private masterTreeData: TreeNode[] = [];
+
+  /** Debounce timer reference to limit CPU cycles during fast typing. */
+  private searchDebounceTimer: any;
+  /** Holds the active, sanitized filter string. */
+  private currentSearchQuery = '';
 
   /**
    * Angular lifecycle hook that fires when an @Input property changes.
@@ -67,12 +77,21 @@ export class TreeViewComponent implements OnChanges {
     if (changes['jsonData'] && changes['jsonData'].currentValue) {
       // Reset our metrics counter before generating a fresh layout tree
       this.actualNodeCount = 0;
-      this.treeData = this.transformJsonToTreeNodes(this.jsonData);
+      // 1. Generate the initial comprehensive data model
+      const generatedTree = this.transformJsonToTreeNodes(this.jsonData);
+
+      // 2. Cache a deep copy reference for our filter operations
+      this.masterTreeData = generatedTree;
+      this.treeData = generatedTree;
     }
   }
 
   /** Evaluates fallback limits and triggers global tree node expansion. */
   public expandAll() {
+    if (this.currentSearchQuery.length && this.filteredNodeCount === 0) {
+      return;
+    }
+
     if (this.actualNodeCount > this.MAX_EXPAND_THRESHOLD) {
       this.vscodeApiService.postMessage({
         command: 'showInfo',
@@ -213,6 +232,87 @@ export class TreeViewComponent implements OnChanges {
       node.icon = 'pi pi-fw pi-file';
     }
     return node;
+  }
+
+  /**
+   * Captures incoming input events and applies an optimized debouncing filter.
+   */
+  public onSearch(query: string) {
+    clearTimeout(this.searchDebounceTimer);
+
+    // Wait 500ms after the user stops typing before manipulating the json dataset
+    this.searchDebounceTimer = setTimeout(() => {
+      this.currentSearchQuery = query.trim().toLowerCase();
+
+      if (!this.currentSearchQuery) {
+        this.treeData = this.masterTreeData;
+        this.filteredNodeCount = 0;
+        return;
+      }
+
+      const filteredResult = this.filterTree(
+        this.masterTreeData,
+        this.currentSearchQuery,
+      );
+      this.filteredNodeCount = this.countNodes(filteredResult);
+      this.treeData = filteredResult;
+    }, 500);
+  }
+
+  /**
+   * High-performance helper to instantly calculate node density
+   * inside a filtered TreeNode array subset.
+   */
+  private countNodes(nodes: TreeNode[]): number {
+    let count = 0;
+    const walk = (nodeList: TreeNode[]) => {
+      for (const node of nodeList) {
+        count++;
+        if (node.children && node.children.length > 0) {
+          walk(node.children);
+        }
+      }
+    };
+    walk(nodes);
+    return count;
+  }
+
+  /**
+   * High performance structural filtering algorithm.
+   * Recursively prunes nodes that do not match the query while preserving matching hierarchies.
+   */
+  private filterTree(nodes: TreeNode[], query: string): TreeNode[] {
+    return nodes
+      .map((node) => {
+        // Create a shallow copy of the node to avoid mutating the master data cache directly
+        const clonedNode = { ...node };
+
+        // If this node has children, filter them recursively first
+        if (clonedNode.children && clonedNode.children.length > 0) {
+          const matchingChildren = this.filterTree(clonedNode.children, query);
+          clonedNode.children = matchingChildren;
+
+          // Strategy: If any child matched, this parent must stay visible and be auto-expanded
+          if (matchingChildren.length > 0) {
+            clonedNode.expanded = true;
+            return clonedNode;
+          }
+        }
+
+        // Check if the node's label or data matches our filter target
+        const labelText = clonedNode.label?.toLowerCase() || '';
+        const valueText =
+          clonedNode.data?.value !== undefined
+            ? String(clonedNode.data.value).toLowerCase()
+            : '';
+
+        if (labelText.includes(query) || valueText.includes(query)) {
+          return clonedNode;
+        }
+
+        return null;
+      })
+      .filter((node): node is TreeNode => node !== null); // Strip out pruned branches cleanly
   }
 
   /**

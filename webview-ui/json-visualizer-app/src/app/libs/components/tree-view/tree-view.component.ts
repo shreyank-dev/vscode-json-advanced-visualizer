@@ -53,6 +53,11 @@ export class TreeViewComponent implements OnChanges {
   /** The JSONPath of the currently selected node in the tree. */
   public selectedNodePath: string | null = null;
 
+  /** Maximum number of nodes allowed to expand instantly without warning the user. */
+  private readonly MAX_EXPAND_THRESHOLD = 5000;
+  /** Tracks the computed total density of the active JSON document. */
+  public actualNodeCount = 0;
+
   /**
    * Angular lifecycle hook that fires when an @Input property changes.
    * This is the entry point for transforming new JSON data.
@@ -60,7 +65,47 @@ export class TreeViewComponent implements OnChanges {
    */
   ngOnChanges(changes: SimpleChanges) {
     if (changes['jsonData'] && changes['jsonData'].currentValue) {
+      // Reset our metrics counter before generating a fresh layout tree
+      this.actualNodeCount = 0;
       this.treeData = this.transformJsonToTreeNodes(this.jsonData);
+    }
+  }
+
+  /** Evaluates fallback limits and triggers global tree node expansion. */
+  public expandAll() {
+    if (this.actualNodeCount > this.MAX_EXPAND_THRESHOLD) {
+      this.vscodeApiService.postMessage({
+        command: 'showInfo',
+        text: `Large dataset warning: Processing ${this.actualNodeCount} nodes may cause a brief layout lag.`,
+      });
+    }
+
+    this.toggleAllNodes(true);
+  }
+
+  /** Collapses all nodes in the workspace instantly. */
+  public collapseAll() {
+    this.toggleAllNodes(false);
+  }
+
+  /**
+   * High performance recursive controller loop.
+   * Updates array references cleanly to notify PrimeNG's virtual scroller engine.
+   */
+  private toggleAllNodes(expand: boolean) {
+    const updatedTree = [...this.treeData];
+    updatedTree.forEach((node) => this.toggleNodeRecursive(node, expand));
+    // Trigger reference assignment mutation for fast change detection
+    this.treeData = updatedTree;
+  }
+
+  /** Mutates structural node metadata recursively down through nested child scopes. */
+  private toggleNodeRecursive(node: TreeNode, isExpand: boolean) {
+    if (node.children && node.children.length > 0) {
+      node.expanded = isExpand;
+      node.children.forEach((child) =>
+        this.toggleNodeRecursive(child, isExpand),
+      );
     }
   }
 
@@ -78,9 +123,8 @@ export class TreeViewComponent implements OnChanges {
    * Set the scroll height for tree view based on whether the tree view is opened in a dialog or not
    */
   get scrollHeight() {
-    return this.dialogMode
-      ? 'calc(60vh - 8.8175rem)'
-      : 'calc(100vh - 8.8175rem)';
+    // Adjusted slightly to accommodate the new 34px toolbar header space cleanly
+    return this.dialogMode ? 'calc(60vh - 11.0rem)' : 'calc(100vh - 11.0rem)';
   }
 
   /**
@@ -92,7 +136,6 @@ export class TreeViewComponent implements OnChanges {
    */
   public copyToClipboard(value: any, type: CopyType, event: MouseEvent) {
     event.stopPropagation();
-
     const textToCopy =
       typeof value === 'object' && value !== null
         ? JSON.stringify(value, null, 2)
@@ -128,11 +171,11 @@ export class TreeViewComponent implements OnChanges {
     }
     if (Array.isArray(data)) {
       return data.map((value, index) =>
-        this.createNode(index.toString(), value, `${path}[${index}]`)
+        this.createNode(index.toString(), value, `${path}[${index}]`),
       );
     }
     return Object.entries(data).map(([key, value]) =>
-      this.createNode(key, value, `${path}.${key}`)
+      this.createNode(key, value, `${path}.${key}`),
     );
   }
 
@@ -144,6 +187,9 @@ export class TreeViewComponent implements OnChanges {
    * @returns A TreeNode object.
    */
   private createNode(key: string, value: any, path: string): TreeNode {
+    // Increment total document elements found
+    this.actualNodeCount++;
+
     const node: TreeNode = {
       label: key,
       styleClass: this.getValueType(value),

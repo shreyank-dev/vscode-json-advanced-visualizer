@@ -9,6 +9,46 @@
   overflow-y: hidden;
 }
 
+.tree-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  background-color: var(--vscode-sideBar-background, #252526);
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+  font-family: var(--vscode-font-family);
+  font-size: 11px;
+  min-height: 34px;
+  box-sizing: border-box;
+
+  .toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: var(--vscode-foreground, #cccccc);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    transition: background-color 100ms ease;
+
+    &:hover {
+      background-color: var(
+        --vscode-toolbar-hoverBackground,
+        rgba(255, 255, 255, 0.08)
+      );
+      color: var(--vscode-toolbar-activeForeground, #ffffff);
+    }
+
+    i {
+      font-size: 10px;
+    }
+  }
+}
+
 .path-footer {
   position: fixed;
   bottom: 0;

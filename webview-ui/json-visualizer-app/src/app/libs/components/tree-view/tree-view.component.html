@@ -1,4 +1,15 @@
 <div class="tree-view-wrapper">
+  <div class="tree-toolbar">
+    <button class="toolbar-btn" (click)="expandAll()">
+      <i class="pi pi-arrow-up-right-and-arrow-down-left-from-center"></i>
+      Expand All
+    </button>
+    <button class="toolbar-btn" (click)="collapseAll()">
+      <i class="pi pi-arrow-down-left-and-arrow-up-right-to-center"></i>
+      Collapse All
+    </button>
+  </div>
+
   <div class="tree-container">
     <p-tree
       [value]="treeData"
@@ -22,6 +33,11 @@
               pTooltip="Copy Value"
               (click)="copyToClipboard(node.data.value, 'Value', $event)"
             ></i>
+            <i
+              class="pi pi-sitemap"
+              pTooltip="Copy JSON Path"
+              (click)="copyToClipboard(node.data.path, 'Path', $event)"
+            ></i>
           </div>
         </div>
       </ng-template>
@@ -33,7 +49,6 @@
       <span>{{ selectedNodePath }}</span>
       <i
         class="pi pi-copy"
-        pTooltip="Copy Path"
         (click)="copyToClipboard(selectedNodePath, 'Path', $event)"
       ></i>
     </div>

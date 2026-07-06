@@ -1,12 +1,22 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
 .tree-view-wrapper {
   height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
 
 .tree-container {
   flex-grow: 1;
+  height: 100%;
   overflow-y: hidden;
+  padding-bottom: 30px;
 }
 
 .tree-toolbar {
@@ -14,11 +24,11 @@
   align-items: center;
   gap: 12px;
   padding: 6px 14px;
-  background-color: var(--vscode-sideBar-background, #252526);
-  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+  background-color: var(--vscode-sideBar-background);
+  border-bottom: 1px solid var(--vscode-sidebar-border);
   font-family: var(--vscode-font-family);
   font-size: 11px;
-  min-height: 34px;
+  height: 4em;
   box-sizing: border-box;
 
   .search-container {
@@ -73,9 +83,9 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: transparent;
+    background-color: var(--vscode-secondaryBackground);
     border: none;
-    color: var(--vscode-foreground, #cccccc);
+    color: var(--vscode-secondaryForeground);
     cursor: pointer;
     padding: 4px 8px;
     border-radius: 3px;
@@ -83,26 +93,19 @@
     white-space: nowrap;
 
     &:hover {
-      background-color: var(
-        --vscode-toolbar-hoverBackground,
-        rgba(255, 255, 255, 0.08)
-      );
-      color: var(--vscode-toolbar-activeForeground, #ffffff);
+      background-color: var(--vscode-button-secondaryHoverBackground);
     }
   }
 
   .search-results-badge {
-    margin-left: auto; // Pushes the status smoothly to the right edge of the toolbar
     color: var(--vscode-descriptionForeground, #858585);
     font-size: 11px;
     letter-spacing: 0.3px;
     white-space: nowrap;
+    margin-left: auto;
 
     &.no-match {
-      color: var(
-        --vscode-errorForeground,
-        #f48771
-      ); // Highlight red if filter turns up empty
+      color: var(--vscode-errorForeground, #f48771);
       font-weight: bold;
     }
   }
@@ -114,12 +117,14 @@
   left: 0;
   width: 100%;
   padding: 4px 20px;
-  background-color: var(--vscode-editor-background);
-  border-top: 1px solid var(--vscode-sideBar-border);
+  background-color: var(--vscode-statusBar-background);
+  color: var(--vscode-statusBar-foreground);
+  border-top: 1px solid var(--vscode-statusBar-border);
   font-family: var(--vscode-editor-font-family);
-  font-size: 0.9em;
-  height: 30px;
+  font-size: 11px;
+  height: 24px;
   box-sizing: border-box;
+  z-index: 10;
 
   .path-content {
     display: flex;
@@ -127,96 +132,182 @@
     justify-content: space-between;
     height: 100%;
 
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      direction: rtl;
+      text-align: left;
+    }
+
     i {
       cursor: pointer;
       margin-left: 10px;
-      color: var(--vscode-icon-foreground);
+      color: currentColor;
+      font-size: 11px;
+      transition: opacity 100ms ease;
+      opacity: 0.8;
       &:hover {
-        color: var(--vscode-textLink-activeForeground);
+        opacity: 1;
+        color: var(--vscode-statusBarItem-hoverBackground);
       }
     }
   }
 }
 
+p-tree {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 // --- Syntax Highlighting and Hover Styles ---
 :host ::ng-deep {
-  // --- Default Colors (Dark Themes) ---
+  // Universal, dynamic syntax highlighting mapping to native VS Code core tokens
 
-  // For nodes representing primitives, color the entire label
   .p-treenode.json-string > .p-treenode-content .p-treenode-label {
-    color: #ce9178; // Orange for strings
+    color: var(--vscode-debugTokenExpression-string, #ce9178);
   }
+
   .p-treenode.json-number > .p-treenode-content .p-treenode-label {
-    color: #b5cea8; // Green for numbers
+    color: var(--vscode-debugTokenExpression-number, #b5cea8);
   }
+
   .p-treenode.json-boolean > .p-treenode-content .p-treenode-label {
-    color: #569cd6; // Blue for booleans
+    color: var(--vscode-debugTokenExpression-boolean, #569cd6);
   }
+
   .p-treenode.json-null > .p-treenode-content .p-treenode-label {
-    color: #808080; // Gray for null
+    color: var(--vscode-debugTokenExpression-value, #808080);
   }
 
-  // For object/array nodes, just color the key, not the children count we will add later
   .p-treenode.json-object > .p-treenode-content .p-treenode-label {
-    color: #9cdcfe; // Light blue for keys
+    color: var(--vscode-debugTokenExpression-name, #9cdcfe);
   }
 
-  // --- Default Colors (Light Themes) ---
-  body.vscode-light & {
-    .p-treenode.json-string > .p-treenode-content .p-treenode-label {
-      color: #a31515; // Dark red for strings
+  .p-treenode-content.p-highlight {
+    .p-treenode-label,
+    .p-treenode.json-string & .p-treenode-label,
+    .p-treenode.json-number & .p-treenode-label,
+    .p-treenode.json-boolean & .p-treenode-label,
+    .p-treenode.json-null & .p-treenode-label,
+    .p-treenode.json-object & .p-treenode-label {
+      color: var(--vscode-list-activeSelectionForeground, #ffffff) !important;
     }
-    .p-treenode.json-number > .p-treenode-content .p-treenode-label {
-      color: #098658; // Dark green for numbers
-    }
-    .p-treenode.json-boolean > .p-treenode-content .p-treenode-label {
-      color: #0000ff; // Standard blue for booleans
-    }
-    .p-treenode.json-null > .p-treenode-content .p-treenode-label {
-      color: #505050; // Dark gray for null
-    }
-    .p-treenode.json-object > .p-treenode-content .p-treenode-label {
-      color: #001080; // Dark blue for keys
+
+    .node-actions {
+      color: var(--vscode-list-activeSelectionForeground, #ffffff);
     }
   }
 
-  // --- Hover and Actions Styles ---
+  .p-tree {
+    background: transparent;
+    color: var(--vscode-foreground, #cccccc);
+    font-family: var(--vscode-font-family);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-bottom: 0;
 
-  .p-treenode-content {
-    transition: background-color 150ms ease-in-out;
+    .p-treenode-icon {
+      color: var(--vscode-icon-foreground, #cccccc);
+      margin-right: 6px;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .p-treenode-content.p-highlight .p-treenode-icon {
+      color: var(--vscode-list-activeSelectionForeground, #ffffff) !important;
+    }
+
+    .p-treenode-content {
+      transition: background-color 100ms ease;
+
+      // The expansion chevron arrow block
+      .p-tree-toggler {
+        color: var(--vscode-icon-foreground, #cccccc);
+        cursor: pointer;
+        width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          color: var(--vscode-foreground, #ffffff);
+        }
+      }
+
+      // Hover State
+      &:hover {
+        background-color: var(
+          --vscode-list-hoverBackground,
+          rgba(255, 255, 255, 0.08)
+        );
+        color: var(--vscode-list-hoverForeground);
+
+        .node-actions {
+          visibility: visible;
+          opacity: 1;
+        }
+      }
+
+      // Selected Node State
+      &.p-highlight {
+        background-color: var(--vscode-list-activeSelectionBackground, #04395e);
+        color: var(--vscode-list-activeSelectionForeground, #ffffff);
+      }
+
+      // Focused State (via keyboard navigation layout)
+      &:focus-visible {
+        outline: 1px solid var(--vscode-focusBorder, #007acc);
+      }
+    }
+
+    // Smooth spacing indentations for tree depth hierarchies
+    .p-treenode-children {
+      padding-left: 12px;
+    }
+  }
+
+  .p-treenode-label {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .node-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 8px;
+    max-width: calc(100% - 80px);
   }
 
   .node-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     width: 100%;
+    overflow: hidden;
   }
 
   .node-actions {
     visibility: hidden;
     opacity: 0;
-    margin-left: 12px;
+    margin-left: 6px;
     transition: opacity 150ms ease-in-out;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     color: var(--vscode-icon-foreground);
+    flex-shrink: 0;
 
     i {
       cursor: pointer;
       &:hover {
         color: var(--vscode-textLink-activeForeground);
       }
-    }
-  }
-
-  .p-treenode-content:hover {
-    background-color: var(--vscode-list-hoverBackground);
-
-    .node-actions {
-      visibility: visible;
-      opacity: 1;
     }
   }
 }

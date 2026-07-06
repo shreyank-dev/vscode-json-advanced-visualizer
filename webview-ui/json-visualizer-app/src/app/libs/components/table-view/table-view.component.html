@@ -1,47 +1,71 @@
-<p-table
+<div
+  class="table-view-wrapper"
   *ngIf="tableData.length > 0 && columns.length > 0"
-  [value]="tableData"
-  [paginator]="true"
-  [rows]="10"
-  [showCurrentPageReport]="true"
-  currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-  [rowsPerPageOptions]="[10, 25, 50]"
-  class="table-view"
 >
-  <ng-template pTemplate="header">
-    <tr>
-      <th *ngFor="let col of columns" [pSortableColumn]="col">
-        {{ col }} <p-sortIcon [field]="col"></p-sortIcon>
-      </th>
-    </tr>
-  </ng-template>
+  <div class="table-toolbar">
+    <div class="search-container">
+      <i class="pi pi-search search-icon"></i>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search all columns..."
+        #globalSearch
+        (input)="dt.filterGlobal(globalSearch.value, 'contains')"
+      />
+      <i
+        class="pi pi-times clear-icon"
+        *ngIf="globalSearch.value"
+        (click)="globalSearch.value = ''; dt.filterGlobal('', 'contains')"
+      ></i>
+    </div>
+  </div>
 
-  <ng-template pTemplate="body" let-rowData>
-    <tr>
-      <td *ngFor="let col of columns">
-        <ng-container *ngIf="isObject(rowData[col]); else primitiveCell">
-          <p-button
-            icon="pi pi-align-justify"
-            styleClass="p-button-sm p-button-text"
-            (click)="showDialog(rowData[col])"
-            pTooltip="View Nested Data"
-          >
-          </p-button>
-        </ng-container>
-        <ng-template #primitiveCell>
-          {{ rowData[col] }}
-        </ng-template>
-      </td>
-    </tr>
-  </ng-template>
-</p-table>
+  <p-table
+    #dt
+    [value]="tableData"
+    [globalFilterFields]="columns"
+    [paginator]="true"
+    [rows]="10"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    class="table-view"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th *ngFor="let col of columns" [pSortableColumn]="col">
+          {{ col }} <p-sortIcon [field]="col"></p-sortIcon>
+        </th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-rowData>
+      <tr>
+        <td *ngFor="let col of columns">
+          <ng-container *ngIf="isObject(rowData[col]); else primitiveCell">
+            <p-button
+              icon="pi pi-align-justify"
+              styleClass="p-button-sm p-button-text"
+              (click)="showDialog(rowData[col])"
+              pTooltip="View Nested Data"
+            >
+            </p-button>
+          </ng-container>
+          <ng-template #primitiveCell>
+            {{ rowData[col] }}
+          </ng-template>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
 
 <p-dialog
   header="Nested Data"
   class="tree-view-dialog"
   [(visible)]="displayDialog"
   [modal]="true"
-  [style]="{ width: '50vw', height: '60vh' }"
+  [style]="{ width: '60vw', height: '70vh' }"
   [draggable]="false"
   [resizable]="false"
 >

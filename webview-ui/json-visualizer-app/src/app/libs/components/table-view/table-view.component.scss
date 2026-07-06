@@ -1,10 +1,76 @@
 :host {
   display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.table-view-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 6px 14px;
+  background-color: var(--vscode-sideBar-background, #252526);
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+  height: 3em;
+  box-sizing: border-box;
+
+  .search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 240px;
+
+    .search-icon {
+      position: absolute;
+      left: 6px;
+      color: var(--vscode-input-placeholderForeground, #858585);
+      font-size: 11px;
+      pointer-events: none;
+    }
+
+    .clear-icon {
+      position: absolute;
+      right: 6px;
+      color: var(--vscode-input-placeholderForeground, #858585);
+      font-size: 9px;
+      cursor: pointer;
+      &:hover {
+        color: var(--vscode-input-foreground, #ffffff);
+      }
+    }
+
+    .search-input {
+      width: 100%;
+      height: 24px;
+      padding: 2px 20px 2px 22px;
+      background-color: var(--vscode-input-background, #3c3c3c);
+      border: 1px solid var(--vscode-input-border, #3c3c3c);
+      color: var(--vscode-input-foreground, #cccccc);
+      border-radius: 2px;
+      font-family: var(--vscode-font-family);
+      font-size: 11px;
+      outline: none;
+      box-sizing: border-box;
+
+      &:focus {
+        border-color: var(--vscode-focusBorder, #007acc);
+      }
+      &::placeholder {
+        color: var(--vscode-input-placeholderForeground, #858585);
+      }
+    }
+  }
 }
 
 .table-view {
-  max-height: calc(100vh - 5.5625rem);
-  width: calc(100vw - 2.5rem);
+  max-height: calc(100% - 3em);
+  width: 100%;
 
   ::ng-deep {
     .p-datatable {
@@ -12,6 +78,52 @@
       flex-direction: column;
       height: 100%;
       width: 100%;
+      background-color: var(--vscode-editor-background, #1e1e1e);
+      color: var(--vscode-foreground, #cccccc);
+      font-family: var(--vscode-font-family);
+      font-size: 12px;
+
+      .p-datatable-thead > tr > th {
+        min-width: 7rem;
+        background-color: var(--vscode-list-hoverBackground, #2a2d2e);
+        color: var(--vscode-foreground, #cccccc);
+        border-bottom: 1px solid var(--vscode-widget-border, #3c3c3c);
+        padding: 8px 12px;
+        font-weight: 600;
+      }
+
+      .p-datatable-tbody > tr {
+        background: transparent;
+        color: var(--vscode-foreground, #cccccc);
+
+        &:nth-child(even) {
+          background-color: var(
+            --vscode-keybindingTable-rowsBackground,
+            rgba(255, 255, 255, 0.01)
+          );
+        }
+
+        & > td {
+          border-bottom: 1px solid var(--vscode-widget-border, #2b2b2b);
+          padding: 6px 12px;
+        }
+
+        &:hover {
+          background-color: var(
+            --vscode-list-hoverBackground,
+            #2a2d2e
+          ) !important;
+          color: var(--vscode-list-hoverForeground);
+        }
+
+        &.p-highlight {
+          background-color: var(
+            --vscode-list-activeSelectionBackground,
+            #04395e
+          ) !important;
+          color: var(--vscode-list-activeSelectionForeground, #ffffff);
+        }
+      }
     }
     .p-datatable-wrapper {
       flex: 1;
@@ -20,8 +132,114 @@
       width: 100%;
       height: 100%;
     }
-    .p-datatable .p-datatable-thead > tr > th {
-      min-width: 7rem;
+    .p-datatable .p-paginator-bottom {
+      background-color: var(--vscode-editor-background, #1e1e1e);
+      border-top: 1px solid var(--vscode-widget-border, #3c3c3c);
+      color: var(--vscode-descriptionForeground, #858585);
+      font-family: var(--vscode-font-family);
+      font-size: 11px;
+      padding: 6px 12px;
+
+      // Custom Current Page Report ("Showing 1 to 10...")
+      .p-paginator-current {
+        color: var(--vscode-descriptionForeground, #858585);
+        font-size: 11px;
+        margin-right: auto; // Pushes controls cleanly to the opposite side
+      }
+
+      // Paginator Control Buttons (Left, Right arrows, numbers)
+      .p-paginator-pages .p-paginator-page,
+      .p-paginator-first,
+      .p-paginator-prev,
+      .p-paginator-next,
+      .p-paginator-last {
+        background: transparent;
+        border: none;
+        color: var(--vscode-foreground, #cccccc);
+        min-width: 24px;
+        height: 24px;
+        border-radius: 3px;
+        margin: 0 2px;
+        padding: 0;
+        font-size: 11px;
+        transition: background-color 100ms ease;
+
+        &:not(.p-disabled):not(.p-highlight):hover {
+          background-color: var(
+            --vscode-toolbar-hoverBackground,
+            rgba(255, 255, 255, 0.08)
+          );
+          color: var(--vscode-toolbar-activeForeground, #ffffff);
+        }
+
+        i {
+          font-size: 10px;
+        }
+      }
+
+      // Active/Selected Page Number Highlight Button
+      .p-paginator-pages .p-paginator-page.p-highlight {
+        background-color: var(--vscode-button-background, #007acc);
+        color: var(--vscode-button-foreground, #ffffff);
+      }
+
+      // Rows Per Page Dropdown Selector Dropdown
+      .p-dropdown {
+        background-color: var(--vscode-dropdown-background, #3c3c3c);
+        border: 1px solid var(--vscode-dropdown-border, #3c3c3c);
+        color: var(--vscode-dropdown-foreground, #cccccc);
+        border-radius: 2px;
+        height: 24px;
+        font-size: 11px;
+        display: inline-flex;
+        align-items: center;
+
+        &:focus-within {
+          border-color: var(--vscode-focusBorder, #007acc);
+        }
+
+        .p-dropdown-label {
+          padding: 0 6px 0 8px;
+          font-size: 11px;
+          color: currentColor;
+        }
+
+        .p-dropdown-trigger {
+          width: 20px;
+          color: currentColor;
+          font-size: 9px;
+        }
+      }
+
+      // Dropdown Overlay Menu Box Panel list items
+      .p-dropdown-panel {
+        background-color: var(--vscode-dropdown-background, #3c3c3c);
+        border: 1px solid var(--vscode-dropdown-border, #3c3c3c);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+
+        .p-dropdown-items {
+          padding: 2px 0;
+        }
+
+        .p-dropdown-item {
+          padding: 4px 8px;
+          font-size: 11px;
+          color: var(--vscode-dropdown-foreground, #cccccc);
+
+          &:not(.p-highlight):hover {
+            background-color: var(--vscode-list-hoverBackground, #2a2d2e);
+            color: var(--vscode-list-hoverForeground, #ffffff);
+          }
+
+          &.p-highlight {
+            background-color: var(
+              --vscode-list-activeSelectionBackground,
+              #04395e
+            );
+            color: var(--vscode-list-activeSelectionForeground, #ffffff);
+          }
+        }
+      }
     }
   }
 }

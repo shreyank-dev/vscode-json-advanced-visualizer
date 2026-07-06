@@ -3,7 +3,7 @@
     <p-message severity="error" text="{{ jsonError }}"></p-message>
   </div>
 
-  <div *ngIf="parsedJson && !jsonError">
+  <div *ngIf="parsedJson && !jsonError" class="app-workspace-container">
     <p-tabView (onChange)="onTabChange($event)">
       <p-tabPanel header="Tree View">
         <app-tree-view [jsonData]="parsedJson"></app-tree-view>

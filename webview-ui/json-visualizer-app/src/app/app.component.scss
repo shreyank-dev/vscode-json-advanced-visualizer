@@ -1,11 +1,106 @@
+:host {
+  display: block;
+  height: calc(100vh - 2px);
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+main {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-workspace-container {
+  flex-grow: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1em 1em 2em;
+}
+
 .error-container {
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+p-tabview {
+  height: 100%;
+  width: 100%;
+}
+
 :host ::ng-deep {
-  .p-tabview .p-tabview-panels {
-    padding: 0;
+  .p-tabview {
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+
+    .p-tabview-nav {
+      background-color: var(--vscode-editorGroupHeader-tabsBackground, #252526);
+      border-bottom: 1px solid var(--vscode-tab-border, #252526);
+      display: flex;
+      margin: 0;
+      padding: 0;
+      list-style-type: none;
+      flex-shrink: 0;
+    }
+
+    .p-tabview-nav li {
+      margin-right: 1px;
+
+      .p-tabview-nav-link {
+        background-color: var(--vscode-tab-inactiveBackground, #2d2d2d);
+        color: var(--vscode-tab-inactiveForeground, #808080);
+        border: none;
+        border-radius: 0;
+        padding: 8px 16px;
+        display: block;
+        font-family: var(--vscode-font-family);
+        font-size: 13px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.2s;
+
+        &:hover {
+          background-color: var(--vscode-tab-hoverBackground);
+          color: var(--vscode-tab-hoverForeground);
+        }
+      }
+
+      &.p-highlight .p-tabview-nav-link {
+        background-color: var(--vscode-tab-activeBackground, #1e1e1e);
+        color: var(--vscode-tab-activeForeground, #ffffff);
+        box-shadow: inset 0 -2px 0 var(--vscode-tab-activeBorder, #007acc); // Clean bottom border accent
+      }
+    }
+
+    .p-tabview-panels {
+      background-color: var(--vscode-editor-background, #1e1e1e);
+      color: var(--vscode-foreground, #cccccc);
+      padding: 0;
+      flex-grow: 1;
+      height: 100%;
+      overflow: hidden;
+
+      .p-tabview-panel[aria-hidden="false"] {
+        display: flex !important;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+      }
+
+      .p-tabview-panel[aria-hidden="true"] {
+        display: none !important;
+      }
+    }
   }
 }

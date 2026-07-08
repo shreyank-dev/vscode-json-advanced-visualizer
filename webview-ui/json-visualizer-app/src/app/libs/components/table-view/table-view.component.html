@@ -52,7 +52,16 @@
             </p-button>
           </ng-container>
           <ng-template #primitiveCell>
-            {{ rowData[col] }}
+            <div
+              class="interactive-copy-cell"
+              [pTooltip]="'Copy Value'"
+              [showDelay]="400"
+              (click)="copyRawCellValue(rowData[col], $event)"
+            >
+              <span class="cell-text-ellipsis">{{
+                formatCellDisplay(rowData[col])
+              }}</span>
+            </div>
           </ng-template>
         </td>
       </tr>

@@ -105,7 +105,15 @@
 
         & > td {
           border-bottom: 1px solid var(--vscode-widget-border, #2b2b2b);
-          padding: 6px 12px;
+          padding: 4px 8px;
+          max-width: 220px;
+
+          &:hover {
+            background-color: var(
+              --vscode-toolbar-hoverBackground,
+              rgba(255, 255, 255, 0.06)
+            );
+          }
         }
 
         &:hover {
@@ -125,6 +133,23 @@
         }
       }
     }
+
+    .interactive-copy-cell {
+      cursor: pointer !important;
+      display: block;
+      width: 100%;
+      border-radius: 3px;
+      transition: background-color 100ms ease;
+
+      .cell-text-ellipsis {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+      }
+    }
+
     .p-datatable-wrapper {
       flex: 1;
     }
@@ -132,6 +157,7 @@
       width: 100%;
       height: 100%;
     }
+
     .p-datatable .p-paginator-bottom {
       background-color: var(--vscode-editor-background, #1e1e1e);
       border-top: 1px solid var(--vscode-widget-border, #3c3c3c);
@@ -140,15 +166,13 @@
       font-size: 11px;
       padding: 6px 12px;
 
-      // Custom Current Page Report ("Showing 1 to 10...")
       .p-paginator-current {
         color: var(--vscode-descriptionForeground, #858585);
         font-size: 11px;
-        margin-right: auto; // Pushes controls cleanly to the opposite side
+        margin-right: auto;
       }
 
-      // Paginator Control Buttons (Left, Right arrows, numbers)
-      .p-paginator-pages .p-paginator-page,
+      .p-paginator-pages .p-paginator-pages .p-paginator-page,
       .p-paginator-first,
       .p-paginator-prev,
       .p-paginator-next,
@@ -177,13 +201,11 @@
         }
       }
 
-      // Active/Selected Page Number Highlight Button
       .p-paginator-pages .p-paginator-page.p-highlight {
         background-color: var(--vscode-button-background, #007acc);
         color: var(--vscode-button-foreground, #ffffff);
       }
 
-      // Rows Per Page Dropdown Selector Dropdown
       .p-dropdown {
         background-color: var(--vscode-dropdown-background, #3c3c3c);
         border: 1px solid var(--vscode-dropdown-border, #3c3c3c);
@@ -211,7 +233,6 @@
         }
       }
 
-      // Dropdown Overlay Menu Box Panel list items
       .p-dropdown-panel {
         background-color: var(--vscode-dropdown-background, #3c3c3c);
         border: 1px solid var(--vscode-dropdown-border, #3c3c3c);

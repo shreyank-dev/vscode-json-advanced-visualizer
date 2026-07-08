@@ -1,77 +1,72 @@
 import * as vscode from "vscode";
+import * as jsonc from "jsonc-parser";
 
-/**
- * The main activation function for the extension.
- * This is called by VS Code the very first time a command from this extension is executed.
- * It sets up the command registration.
- * @param context The extension context provided by VS Code.
- */
 export function activate(context: vscode.ExtensionContext) {
-  // Register the main command for the extension.
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "json-advanced-visualizer.visualizeSelection",
       () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
-          vscode.window.showInformationMessage(
-            "No active editor. Please open a file and select some JSON."
-          );
+          vscode.window.showInformationMessage("No active editor found.");
           return;
         }
+
         const selection = editor.document.getText(editor.selection);
         if (!selection) {
           vscode.window.showInformationMessage(
-            "No text selected. Please select valid JSON to visualize."
+            "Please select valid JSON to visualize.",
           );
           return;
         }
 
-        // Create or show the webview panel.
-        VisualizerPanel.createOrShow(context.extensionUri, selection);
-      }
-    )
+        // Launch a brand new panel instance tied to this unique document context
+        VisualizerPanel.createNewPanel(
+          context.extensionUri,
+          selection,
+          editor.document.uri,
+        );
+      },
+    ),
   );
 }
 
-/**
- * Manages the state and behavior of the JSON visualizer webview panel.
- * It encapsulates the creation, content management, and communication for the panel.
- */
-class VisualizerPanel {
-  /** Tracks the currently open panel. Only one is allowed to exist at a time. */
-  public static currentPanel: VisualizerPanel | undefined;
+export function deactivate() {}
 
+class VisualizerPanel {
+  private static _openPanels = new Map<string, VisualizerPanel>();
   public static readonly viewType = "jsonVisualizer";
 
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
+  private readonly _sourceDocumentUri: vscode.Uri;
+  private _initialSelectionText: string;
   private _disposables: vscode.Disposable[] = [];
 
-  /**
-   * Creates a new visualizer panel or shows the existing one.
-   * @param extensionUri The URI of the extension's root directory.
-   * @param selection The JSON text selected by the user.
-   */
-  public static createOrShow(extensionUri: vscode.Uri, selection: string) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
+  public static createNewPanel(
+    extensionUri: vscode.Uri,
+    selection: string,
+    sourceUri: vscode.Uri,
+  ) {
+    const uriKey = sourceUri.toString();
 
-    // If we already have a panel, show it.
-    if (VisualizerPanel.currentPanel) {
-      VisualizerPanel.currentPanel._panel.reveal(column);
-      VisualizerPanel.currentPanel._sendJsonToWebview(selection);
+    // Context management: Triggered when a visualization tab is already running for this file
+    if (VisualizerPanel._openPanels.has(uriKey)) {
+      const existingPanel = VisualizerPanel._openPanels.get(uriKey);
+
+      existingPanel?._panel.reveal(vscode.ViewColumn.Beside);
+      existingPanel?._updatePanelState(selection);
       return;
     }
 
-    // Otherwise, create a new panel.
+    const fileName = sourceUri.path.split("/").pop() || "Selection";
     const panel = vscode.window.createWebviewPanel(
       VisualizerPanel.viewType,
-      "JSON Visualizer",
-      column || vscode.ViewColumn.One,
+      `JSON Lens: ${fileName}`,
+      vscode.ViewColumn.Beside,
       {
         enableScripts: true,
+        retainContextWhenHidden: true,
         localResourceRoots: [
           vscode.Uri.joinPath(
             extensionUri,
@@ -79,37 +74,45 @@ class VisualizerPanel {
             "json-visualizer-app",
             "dist",
             "json-visualizer-app",
-            "browser"
+            "browser",
           ),
         ],
-      }
+      },
     );
 
-    VisualizerPanel.currentPanel = new VisualizerPanel(
+    const newInstance = new VisualizerPanel(
       panel,
       extensionUri,
-      selection
+      selection,
+      sourceUri,
     );
+    VisualizerPanel._openPanels.set(uriKey, newInstance);
   }
 
   private constructor(
     panel: vscode.WebviewPanel,
     extensionUri: vscode.Uri,
-    selection: string
+    selection: string,
+    sourceUri: vscode.Uri,
   ) {
     this._panel = panel;
     this._extensionUri = extensionUri;
+    this._sourceDocumentUri = sourceUri;
+    this._initialSelectionText = selection;
 
-    // Set the webview's initial content
     this._panel.webview.html = this._getHtmlForWebview();
-
-    // Listen for when the panel is disposed (e.g., when the user closes it)
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    // Handle messages from the webview
     this._panel.webview.onDidReceiveMessage(
-      (message) => {
+      async (message) => {
         switch (message.command) {
+          case "jumpToPath":
+            await handleJumpToPath(
+              message.pathSegments,
+              this._sourceDocumentUri,
+              this._initialSelectionText,
+            );
+            break;
           case "showInfo":
             vscode.window.showInformationMessage(message.text);
             return;
@@ -119,42 +122,30 @@ class VisualizerPanel {
         }
       },
       null,
-      this._disposables
+      this._disposables,
     );
 
-    // Send the initial JSON data to the webview
     this._sendJsonToWebview(selection);
   }
 
-  /**
-   * Sends a JSON string to be rendered in the webview.
-   * @param jsonText The JSON string to visualize.
-   */
+  private _updatePanelState(newSelectionText: string) {
+    this._initialSelectionText = newSelectionText;
+    this._sendJsonToWebview(newSelectionText);
+  }
+
   private _sendJsonToWebview(jsonText: string) {
     this._panel.webview.postMessage({ command: "loadJson", text: jsonText });
   }
 
-  /**
-   * Cleans up resources when the panel is closed.
-   */
   public dispose() {
-    VisualizerPanel.currentPanel = undefined;
-
-    // Clean up our panel
+    VisualizerPanel._openPanels.delete(this._sourceDocumentUri.toString());
     this._panel.dispose();
-
     while (this._disposables.length) {
       const x = this._disposables.pop();
-      if (x) {
-        x.dispose();
-      }
+      x?.dispose();
     }
   }
 
-  /**
-   * Generates the complete HTML content for the webview panel.
-   * @returns The HTML string.
-   */
   private _getHtmlForWebview(): string {
     const webview = this._panel.webview;
     const isDarkTheme =
@@ -162,41 +153,32 @@ class VisualizerPanel {
     const initialTheme = isDarkTheme ? "aura-dark-blue" : "aura-light-blue";
     const nonce = getNonce();
 
-    // Get the base URI for the compiled Angular app
     const angularAppDistPath = vscode.Uri.joinPath(
       this._extensionUri,
       "webview-ui",
       "json-visualizer-app",
       "dist",
       "json-visualizer-app",
-      "browser"
+      "browser",
     );
-
-    // Create webview-safe URIs for all assets
     const stylesUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(angularAppDistPath, "styles.css")
+      vscode.Uri.joinPath(angularAppDistPath, "styles.css"),
     );
     const themeUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(angularAppDistPath, `${initialTheme}.css`)
+      vscode.Uri.joinPath(angularAppDistPath, `${initialTheme}.css`),
     );
     const polyfillsUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(angularAppDistPath, "polyfills.js")
+      vscode.Uri.joinPath(angularAppDistPath, "polyfills.js"),
     );
     const mainUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(angularAppDistPath, "main.js")
+      vscode.Uri.joinPath(angularAppDistPath, "main.js"),
     );
 
     return `<!DOCTYPE html>
       <html lang="en">
       <head>
           <meta charset="UTF-8">
-          <meta http-equiv="Content-Security-Policy" content="
-            default-src 'none';
-            style-src ${webview.cspSource} 'unsafe-inline';
-            font-src ${webview.cspSource};
-            img-src ${webview.cspSource};
-            script-src 'nonce-${nonce}';
-          ">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; img-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <link href="${stylesUri}" rel="stylesheet">
           <link id="app-theme" rel="stylesheet" type="text/css" href="${themeUri}">
@@ -211,10 +193,6 @@ class VisualizerPanel {
   }
 }
 
-/**
- * Generates a random string to be used as a nonce for the Content Security Policy.
- * @returns A 32-character random string.
- */
 function getNonce() {
   let text = "";
   const possible =
@@ -226,7 +204,90 @@ function getNonce() {
 }
 
 /**
- * This method is called when the extension is deactivated.
- * It can be used to clean up any resources.
+ * Handles high-precision jump-to-source logic by aligning cached snippets
+ * with the document's global Abstract Syntax Tree coordinate space.
  */
-export function deactivate() {}
+async function handleJumpToPath(
+  pathSegments: jsonc.Segment[],
+  sourceUri: vscode.Uri,
+  cachedSelectionText: string,
+) {
+  try {
+    const document = await vscode.workspace.openTextDocument(sourceUri);
+    const editor = await vscode.window.showTextDocument(document, {
+      viewColumn: vscode.ViewColumn.One,
+      preserveFocus: false,
+    });
+
+    const fullDocumentText = document.getText();
+    let parsingContextText = fullDocumentText;
+    let codeOffsetDelta = 0;
+
+    // 1. Structural Sanitization Layer
+    if (cachedSelectionText.length > 0) {
+      const localEqualsIndex = cachedSelectionText.indexOf("=");
+
+      if (
+        localEqualsIndex !== -1 &&
+        !cachedSelectionText.trim().startsWith("{") &&
+        !cachedSelectionText.trim().startsWith("[")
+      ) {
+        const rawJsonSnippet = cachedSelectionText
+          .substring(localEqualsIndex + 1)
+          .trim();
+
+        // Find exactly where this specific code fragment block sits inside the absolute global document file context
+        const globalFragmentOffset = fullDocumentText.indexOf(rawJsonSnippet);
+
+        if (globalFragmentOffset !== -1) {
+          codeOffsetDelta = globalFragmentOffset;
+          parsingContextText = rawJsonSnippet;
+        }
+      } else {
+        // Find where the pristine JSON chunk lives globally inside the text document
+        const globalFragmentOffset =
+          fullDocumentText.indexOf(cachedSelectionText);
+        if (globalFragmentOffset !== -1) {
+          codeOffsetDelta = globalFragmentOffset;
+          parsingContextText = cachedSelectionText;
+        }
+      }
+    }
+
+    // 2. Build the precise structural AST map using our safe local content stream
+    const rootNode = jsonc.parseTree(parsingContextText);
+    if (!rootNode) {
+      return;
+    }
+
+    // 3. Coordinate Trace Lookups
+    const targetNode = jsonc.findNodeAtLocation(rootNode, pathSegments);
+
+    if (targetNode) {
+      const finalNode =
+        targetNode.parent && targetNode.parent.type === "property"
+          ? targetNode.parent
+          : targetNode;
+
+      // Map back to absolute global editor coordinates flawlessly
+      const startPosition = document.positionAt(
+        codeOffsetDelta + finalNode.offset,
+      );
+      const endPosition = document.positionAt(
+        codeOffsetDelta + finalNode.offset + finalNode.length,
+      );
+
+      editor.selection = new vscode.Selection(startPosition, startPosition);
+      editor.revealRange(
+        new vscode.Range(startPosition, endPosition),
+        vscode.TextEditorRevealType.InCenter,
+      );
+    } else {
+      vscode.window.showWarningMessage(
+        `Could not locate target node inside the source document text layer.`,
+      );
+    }
+  } catch (error: any) {
+    console.error(`[EXCEPTION]: ${error?.message || error}`);
+  }
+}

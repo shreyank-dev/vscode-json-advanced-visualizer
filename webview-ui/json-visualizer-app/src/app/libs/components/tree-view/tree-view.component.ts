@@ -6,14 +6,12 @@ import {
   OnChanges,
   SimpleChanges,
 } from '@angular/core';
-
 import { TreeModule } from 'primeng/tree';
 import { TreeNode } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
-
 import { VscodeApiService } from './../../services/vscode-api.service';
 
-// Constants for string literals
+// Style class constants for token highlighting
 const JSON_STYLE_CLASSES = {
   NULL: 'json-null',
   STRING: 'json-string',
@@ -27,9 +25,8 @@ const JSON_STYLE_CLASSES = {
 type CopyType = 'Key' | 'Value' | 'Path';
 
 /**
- * The TreeViewComponent is responsible for rendering JSON data in an interactive,
- * collapsible tree structure. It provides features like syntax highlighting,
- * item counts, hover-to-copy actions, and JSONPath display.
+ * The TreeViewComponent renders raw JSON data structures into an interactive,
+ * theme-aware collapsible tree structure inside the VS Code webview window space.
  */
 @Component({
   selector: 'app-tree-view',
@@ -38,55 +35,39 @@ type CopyType = 'Key' | 'Value' | 'Path';
   styleUrl: './tree-view.component.scss',
 })
 export class TreeViewComponent implements OnChanges {
-  /** Injected service for communicating with the VS Code extension host. */
-  vscodeApiService = inject(VscodeApiService);
+  /** Bridge service channel communicating with the parent extension host layer */
+  private readonly vscodeApiService = inject(VscodeApiService);
 
-  /** The raw JSON object or array passed in from the parent component. */
+  /** Raw incoming JSON object/array models from text view frames */
   @Input() jsonData: any;
 
-  /** Flag to check whether the component is opened in a dialog or not */
-  @Input() dialogMode: boolean = false;
+  /** Configures sizing math constraints when displayed inside container popups */
+  @Input() dialogMode = false;
 
-  /** The transformed data in the format required by the PrimeNG p-tree component. */
   public treeData: TreeNode[] = [];
-
-  /** The JSONPath of the currently selected node in the tree. */
   public selectedNodePath: string | null = null;
-
-  /** Maximum number of nodes allowed to expand instantly without warning the user. */
-  private readonly MAX_EXPAND_THRESHOLD = 5000;
-  /** Tracks the computed total density of the active JSON document. */
   public actualNodeCount = 0;
-  /** Tracks the number of visible nodes currently matching the search filter. */
   public filteredNodeCount = 0;
 
-  /** Pristine cache of the fully transformed tree structure used for fast resetting. */
+  private readonly MAX_EXPAND_THRESHOLD = 5000;
   private masterTreeData: TreeNode[] = [];
-
-  /** Debounce timer reference to limit CPU cycles during fast typing. */
   private searchDebounceTimer: any;
-  /** Holds the active, sanitized filter string. */
   private currentSearchQuery = '';
 
-  /**
-   * Angular lifecycle hook that fires when an @Input property changes.
-   * This is the entry point for transforming new JSON data.
-   * @param changes An object containing the changed input properties.
-   */
   ngOnChanges(changes: SimpleChanges) {
     if (changes['jsonData'] && changes['jsonData'].currentValue) {
-      // Reset our metrics counter before generating a fresh layout tree
       this.actualNodeCount = 0;
-      // 1. Generate the initial comprehensive data model
       const generatedTree = this.transformJsonToTreeNodes(this.jsonData);
 
-      // 2. Cache a deep copy reference for our filter operations
       this.masterTreeData = generatedTree;
       this.treeData = generatedTree;
     }
   }
 
-  /** Evaluates fallback limits and triggers global tree node expansion. */
+  get scrollHeight(): string {
+    return this.dialogMode ? 'calc(60vh - 11.0rem)' : 'calc(100vh - 11.0rem)';
+  }
+
   public expandAll() {
     if (this.currentSearchQuery.length && this.filteredNodeCount === 0) {
       return;
@@ -102,23 +83,16 @@ export class TreeViewComponent implements OnChanges {
     this.toggleAllNodes(true);
   }
 
-  /** Collapses all nodes in the workspace instantly. */
   public collapseAll() {
     this.toggleAllNodes(false);
   }
 
-  /**
-   * High performance recursive controller loop.
-   * Updates array references cleanly to notify PrimeNG's virtual scroller engine.
-   */
   private toggleAllNodes(expand: boolean) {
     const updatedTree = [...this.treeData];
     updatedTree.forEach((node) => this.toggleNodeRecursive(node, expand));
-    // Trigger reference assignment mutation for fast change detection
     this.treeData = updatedTree;
   }
 
-  /** Mutates structural node metadata recursively down through nested child scopes. */
   private toggleNodeRecursive(node: TreeNode, isExpand: boolean) {
     if (node.children && node.children.length > 0) {
       node.expanded = isExpand;
@@ -128,31 +102,12 @@ export class TreeViewComponent implements OnChanges {
     }
   }
 
-  /**
-   * Event handler called by the p-tree component when a node is selected.
-   * @param event The selection event object from PrimeNG.
-   */
   public onNodeSelect(event: { node: TreeNode }) {
     if (event.node && event.node.data) {
       this.selectedNodePath = event.node.data.path;
     }
   }
 
-  /**
-   * Set the scroll height for tree view based on whether the tree view is opened in a dialog or not
-   */
-  get scrollHeight() {
-    // Adjusted slightly to accommodate the new 34px toolbar header space cleanly
-    return this.dialogMode ? 'calc(60vh - 11.0rem)' : 'calc(100vh - 11.0rem)';
-  }
-
-  /**
-   * Copies the given value to the user's clipboard and sends a notification
-   * back to the VS Code extension host.
-   * @param value The data to be copied.
-   * @param type A user-friendly string describing the type of data being copied.
-   * @param event The mouse event, used to stop propagation.
-   */
   public copyToClipboard(value: any, type: CopyType, event: MouseEvent) {
     event.stopPropagation();
     const textToCopy =
@@ -177,14 +132,28 @@ export class TreeViewComponent implements OnChanges {
       });
   }
 
-  /**
-   * Recursively transforms a JSON object or array into the TreeNode array structure.
-   * This is the entry point for the transformation logic.
-   * @param data The JSON object or array to transform.
-   * @param path The current JSONPath being built.
-   * @returns An array of TreeNode objects.
-   */
-  private transformJsonToTreeNodes(data: any, path: string = '$'): TreeNode[] {
+  public onSearch(query: string) {
+    clearTimeout(this.searchDebounceTimer);
+
+    this.searchDebounceTimer = setTimeout(() => {
+      this.currentSearchQuery = query.trim().toLowerCase();
+
+      if (!this.currentSearchQuery) {
+        this.treeData = this.masterTreeData;
+        this.filteredNodeCount = 0;
+        return;
+      }
+
+      const filteredResult = this.filterTree(
+        this.masterTreeData,
+        this.currentSearchQuery,
+      );
+      this.filteredNodeCount = this.countNodes(filteredResult);
+      this.treeData = filteredResult;
+    }, 500);
+  }
+
+  private transformJsonToTreeNodes(data: any, path = '$'): TreeNode[] {
     if (data === null || typeof data !== 'object') {
       return [];
     }
@@ -193,20 +162,14 @@ export class TreeViewComponent implements OnChanges {
         this.createNode(index.toString(), value, `${path}[${index}]`),
       );
     }
-    return Object.entries(data).map(([key, value]) =>
-      this.createNode(key, value, `${path}.${key}`),
-    );
+    return Object.entries(data).map(([key, value]) => {
+      const needsEscaping = /[\.\s\-]/g.test(key) || !isNaN(Number(key[0]));
+      const safePath = needsEscaping ? `${path}["${key}"]` : `${path}.${key}`;
+      return this.createNode(key, value, safePath);
+    });
   }
 
-  /**
-   * A helper function to create a single, fully-formed TreeNode.
-   * @param key The JSON key or array index for the node.
-   * @param value The JSON value for the node.
-   * @param path The full JSONPath to this node.
-   * @returns A TreeNode object.
-   */
   private createNode(key: string, value: any, path: string): TreeNode {
-    // Increment total document elements found
     this.actualNodeCount++;
 
     const node: TreeNode = {
@@ -234,35 +197,6 @@ export class TreeViewComponent implements OnChanges {
     return node;
   }
 
-  /**
-   * Captures incoming input events and applies an optimized debouncing filter.
-   */
-  public onSearch(query: string) {
-    clearTimeout(this.searchDebounceTimer);
-
-    // Wait 500ms after the user stops typing before manipulating the json dataset
-    this.searchDebounceTimer = setTimeout(() => {
-      this.currentSearchQuery = query.trim().toLowerCase();
-
-      if (!this.currentSearchQuery) {
-        this.treeData = this.masterTreeData;
-        this.filteredNodeCount = 0;
-        return;
-      }
-
-      const filteredResult = this.filterTree(
-        this.masterTreeData,
-        this.currentSearchQuery,
-      );
-      this.filteredNodeCount = this.countNodes(filteredResult);
-      this.treeData = filteredResult;
-    }, 500);
-  }
-
-  /**
-   * High-performance helper to instantly calculate node density
-   * inside a filtered TreeNode array subset.
-   */
   private countNodes(nodes: TreeNode[]): number {
     let count = 0;
     const walk = (nodeList: TreeNode[]) => {
@@ -277,29 +211,21 @@ export class TreeViewComponent implements OnChanges {
     return count;
   }
 
-  /**
-   * High performance structural filtering algorithm.
-   * Recursively prunes nodes that do not match the query while preserving matching hierarchies.
-   */
   private filterTree(nodes: TreeNode[], query: string): TreeNode[] {
     return nodes
       .map((node) => {
-        // Create a shallow copy of the node to avoid mutating the master data cache directly
         const clonedNode = { ...node };
 
-        // If this node has children, filter them recursively first
         if (clonedNode.children && clonedNode.children.length > 0) {
           const matchingChildren = this.filterTree(clonedNode.children, query);
           clonedNode.children = matchingChildren;
 
-          // Strategy: If any child matched, this parent must stay visible and be auto-expanded
           if (matchingChildren.length > 0) {
             clonedNode.expanded = true;
             return clonedNode;
           }
         }
 
-        // Check if the node's label or data matches our filter target
         const labelText = clonedNode.label?.toLowerCase() || '';
         const valueText =
           clonedNode.data?.value !== undefined
@@ -309,17 +235,11 @@ export class TreeViewComponent implements OnChanges {
         if (labelText.includes(query) || valueText.includes(query)) {
           return clonedNode;
         }
-
         return null;
       })
-      .filter((node): node is TreeNode => node !== null); // Strip out pruned branches cleanly
+      .filter((node): node is TreeNode => node !== null);
   }
 
-  /**
-   * Returns a CSS class name based on the data type of the value.
-   * @param value The value to check.
-   * @returns A string representing the CSS class from our constants.
-   */
   private getValueType(value: any): string {
     if (value === null) return JSON_STYLE_CLASSES.NULL;
     switch (typeof value) {
@@ -336,5 +256,82 @@ export class TreeViewComponent implements OnChanges {
       default:
         return JSON_STYLE_CLASSES.DEFAULT;
     }
+  }
+
+  public jumpToSource(jsonPath: string, event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
+
+    if (!jsonPath) return;
+
+    const segments: (string | number)[] = [];
+    let i = 0;
+
+    if (jsonPath.startsWith('$')) i++;
+
+    while (i < jsonPath.length) {
+      const char = jsonPath[i];
+
+      if (char === '[') {
+        i++; // Skip opening bracket '['
+
+        if (jsonPath[i] === "'" || jsonPath[i] === '"') {
+          const quoteChar = jsonPath[i];
+          i++; // Skip opening quote
+          let keyAccumulator = '';
+
+          while (i < jsonPath.length && jsonPath[i] !== quoteChar) {
+            keyAccumulator += jsonPath[i];
+            i++;
+          }
+          segments.push(keyAccumulator);
+          i++; // Skip closing quote
+        } else {
+          let indexAccumulator = '';
+          while (i < jsonPath.length && jsonPath[i] !== ']') {
+            indexAccumulator += jsonPath[i];
+            i++;
+          }
+          segments.push(Number(indexAccumulator));
+        }
+        i++; // Skip closing bracket ']'
+        continue;
+      }
+
+      if (char === '.') {
+        i++; // Skip dot separator '.'
+        let keyAccumulator = '';
+        while (
+          i < jsonPath.length &&
+          jsonPath[i] !== '.' &&
+          jsonPath[i] !== '['
+        ) {
+          keyAccumulator += jsonPath[i];
+          i++;
+        }
+        if (keyAccumulator) {
+          segments.push(keyAccumulator);
+        }
+        continue;
+      }
+
+      let plainKey = '';
+      while (
+        i < jsonPath.length &&
+        jsonPath[i] !== '.' &&
+        jsonPath[i] !== '['
+      ) {
+        plainKey += jsonPath[i];
+        i++;
+      }
+      if (plainKey) {
+        segments.push(plainKey);
+      }
+    }
+
+    this.vscodeApiService.postMessage({
+      command: 'jumpToPath',
+      pathSegments: segments,
+    });
   }
 }

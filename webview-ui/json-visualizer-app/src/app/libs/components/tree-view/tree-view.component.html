@@ -52,6 +52,11 @@
           <span class="node-label">{{ node.label }}</span>
           <div class="node-actions">
             <i
+              class="pi pi-eye"
+              pTooltip="Jump to Code"
+              (click)="jumpToSource(node.data.path, $event)"
+            ></i>
+            <i
               class="pi pi-key"
               pTooltip="Copy Key"
               (click)="copyToClipboard(node.data.key, 'Key', $event)"
